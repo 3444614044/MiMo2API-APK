@@ -41,11 +41,11 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle.setOnClickListener { toggleServer() }
         btnAdmin.setOnClickListener {
-            if (!ServerState.running) {
+            if (ServerState.running) {
+                startActivity(Intent(this, AdminActivity::class.java))
+            } else {
                 toast("请先启动服务")
-                return@click
             }
-            startActivity(Intent(this, AdminActivity::class.java))
         }
         btnCopy.setOnClickListener {
             val cm = getSystemService(ClipboardManager::class.java)
