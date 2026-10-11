@@ -8,7 +8,13 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.chaquo.python.AndroidPlatform
 import com.chaquo.python.Python
+
+/** 全局 Context（Chaquopy 启动用）。 */
+object AppHolder {
+    @Volatile lateinit var context: android.content.Context
+}
 
 /**
  * 前台服务：在后台线程里以内嵌 Python 运行时启动 uvicorn（MiMo2API 服务）。
@@ -18,6 +24,18 @@ class ServerService : Service() {
     companion object {
         const val EXTRA_PORT = "extra_port"
         const val CHANNEL_ID = "mimo2api_server"
+
+        private val pyLock = Any()
+        private var pyStarted = false
+
+        /** Chaquopy 16：首次使用前必须以 AndroidPlatform 启动解释器。 */
+        private fun python(): Python = synchronized(pyLock) {
+            if (!pyStarted) {
+                Python.start(AndroidPlatform(AppHolder.context))
+                pyStarted = true
+            }
+            Python.getInstance()
+        }
     }
 
     private var worker: Thread? = null
@@ -25,6 +43,7 @@ class ServerService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        AppHolder.context = applicationContext
         val port = intent?.getIntExtra(EXTRA_PORT, 8080) ?: 8080
         ServerState.port = port
         startForeground(1, buildNotification(port))
@@ -34,8 +53,7 @@ class ServerService : Service() {
         ServerState.lastError = null
         worker = Thread {
             try {
-                val py = Python.getInstance()
-                py.getModule("mobile_main").callAttr("start", filesDir.absolutePath, port)
+                python().getModule("mobile_main").callAttr("start", filesDir.absolutePath, port)
             } catch (t: Throwable) {
                 ServerState.lastError = t.message ?: t.javaClass.simpleName
                 ServerState.running = false
