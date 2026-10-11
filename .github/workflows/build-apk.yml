@@ -21,8 +21,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # ubuntu-latest 已预装 Android SDK（/usr/local/lib/android/sdk），
+      # setup-android@v3 在新 runner 上因 'tools' 包废弃而失败，直接省略。
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
