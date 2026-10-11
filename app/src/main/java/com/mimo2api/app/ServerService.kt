@@ -74,7 +74,6 @@ class ServerService : Service() {
         ServerState.running = false
         // uvicorn.run 阻塞在 daemon 线程里，进程内无平滑退出接口；杀掉解释器线程组即可
         worker?.interrupt()
-        Python.getInstance().close()
         super.onDestroy()
     }
 }
